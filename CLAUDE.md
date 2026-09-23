@@ -19,6 +19,7 @@ pnpm typecheck        # tsc in every workspace
 pnpm test             # Vitest in every workspace
 pnpm --filter @cart-wise/shared test   # one workspace
 pnpm size             # build first; fails if initial JS > 150 KB gzip
+pnpm test:e2e         # Playwright vs the production build (build + db:migrate:local first)
 
 pnpm dev              # app + API on http://localhost:5180 (port must match BETTER_AUTH_URL)
 pnpm db:generate      # generate a migration from packages/db/src/schema changes
@@ -36,6 +37,9 @@ Deploy commands arrive when the Cloudflare account is set up.
 - API tests run inside workerd via `@cloudflare/vitest-pool-workers`, with migrations applied to a fresh D1 (`apps/api/test/apply-migrations.ts`). Use `test/helpers.ts` (`api`, `signUp`, `authed`).
 - Web unit tests use `apps/web/vitest.config.ts` (not `vite.config.ts` — the Cloudflare plugin can't run under Vitest).
 - Local D1 state for dev lives in `/.wrangler/state`, shared by `pnpm dev` and `pnpm db:migrate:local`.
+- Lists are offline-first: UI reads/writes Dexie (`apps/web/src/features/lists`), `SyncEngine` pushes/pulls `/api/sync`. The merge rules exist twice, in `packages/shared/src/sync/merge.ts` (client) and SQL in `apps/api/src/routes/sync.ts` (server); change both together.
+- Anything that needs Dexie stays in lazily loaded modules (route `lazy` or dynamic `import()`); the main bundle only has `lib/sync-status.ts`.
+- Service worker only exists in builds; test offline behaviour with `pnpm build` + `vite preview` or `pnpm test:e2e`.
 - The API compatibility date is capped by the workerd bundled in `@cloudflare/vitest-pool-workers`; tests fail to start if it's newer.
 
 ## Repo layout

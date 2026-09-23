@@ -17,7 +17,8 @@
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
     "size": "pnpm --filter @cart-wise/web size",
     "db:generate": "pnpm --filter @cart-wise/db generate",
-    "db:migrate:local": "pnpm --filter @cart-wise/api db:migrate:local"
+    "db:migrate:local": "pnpm --filter @cart-wise/api db:migrate:local",
+    "test:e2e": "pnpm --filter @cart-wise/web test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

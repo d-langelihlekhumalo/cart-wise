@@ -1,7 +1,7 @@
-import type { ComponentType, ReactNode, SVGProps } from 'react';
+import { type ComponentType, type ReactNode, type SVGProps, useEffect } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { signOut, useSession } from '../lib/auth-client';
+import { signOutAndForget, useAppSession } from '../lib/session';
 import {
   HomeIcon,
   ListIcon,
@@ -12,6 +12,7 @@ import {
   SplitIcon,
   TagIcon,
 } from './icons';
+import { SyncIndicator, SyncPill } from './SyncIndicator';
 
 function Logo({ className = '' }: { className?: string }) {
   return (
@@ -117,18 +118,29 @@ interface NavEntry {
 
 const navEntries: NavEntry[] = [
   { to: '/', label: 'Home', icon: HomeIcon },
-  { to: '/lists', label: 'Lists', icon: ListIcon, soon: true },
+  { to: '/lists', label: 'Lists', icon: ListIcon },
   { to: '/prices', label: 'Prices', icon: TagIcon, soon: true },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
 export function AppLayout() {
+  const { user } = useAppSession();
+  const userId = user?.id;
+
+  // Open the local database and start background sync. Loaded lazily to keep Dexie out of
+  // the initial bundle.
+  useEffect(() => {
+    if (!userId) return;
+    void import('../features/lists/sync').then((m) => m.startSync(userId));
+  }, [userId]);
+
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
       <Sidebar />
 
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-200 bg-stone-50/90 px-4 py-3 backdrop-blur lg:hidden">
         <Logo className="text-brand-800" />
+        <SyncPill />
       </header>
 
       <div className="flex min-h-dvh flex-col">
@@ -152,6 +164,7 @@ function Sidebar() {
           <SidebarItem key={entry.to} entry={entry} />
         ))}
       </nav>
+      <SyncIndicator className="mb-4" />
       <AccountBlock />
     </aside>
   );
@@ -196,26 +209,24 @@ function SoonBadge() {
 }
 
 function AccountBlock() {
-  const { data: session } = useSession();
+  const { user } = useAppSession();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  if (!session) return null;
+  if (!user) return null;
 
   async function onSignOut() {
-    await signOut();
-    queryClient.clear();
-    void navigate('/login', { replace: true });
+    if (await signOutAndForget(queryClient)) void navigate('/login', { replace: true });
   }
 
-  const initial = session.user.name.trim().charAt(0).toUpperCase() || '?';
+  const initial = user.name.trim().charAt(0).toUpperCase() || '?';
   return (
     <div className="flex items-center gap-3 border-t border-stone-200 px-2 pt-4">
       <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-100 font-semibold text-brand-800">
         {initial}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{session.user.name}</p>
-        <p className="truncate text-xs text-stone-500">{session.user.email}</p>
+        <p className="truncate text-sm font-medium">{user.name}</p>
+        <p className="truncate text-xs text-stone-500">{user.email}</p>
       </div>
       <button
         type="button"
@@ -271,17 +282,17 @@ function BottomNav() {
 /* ------------------------------------------------------------------------------------------ */
 
 export function PublicLayout() {
-  const { data: session } = useSession();
+  const { user } = useAppSession();
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="border-b border-stone-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-10">
           <Logo className="text-brand-800" />
           <Link
-            to={session ? '/' : '/login'}
+            to={user ? '/' : '/login'}
             className="rounded-lg px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
           >
-            {session ? 'Open app' : 'Sign in'}
+            {user ? 'Open app' : 'Sign in'}
           </Link>
         </div>
       </header>

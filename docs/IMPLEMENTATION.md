@@ -128,23 +128,26 @@ Each milestone ends with: tests green, `docs/PLAN.md` checkbox ticked, deployed 
 
 **Shared**
 
-- [ ] Zod schemas: `List`, `ListItem`, `SyncOp` (`upsert_list`, `delete_list`, `upsert_item` with per-field timestamps, `delete_item`), `PushRequest/Response`, `PullResponse`.
-- [ ] `mergeItem(local, remote)` last-write-wins per field — pure and unit-tested (clock skew, concurrent check/uncheck, delete-vs-edit: delete wins).
+- [x] Zod schemas: `List`, `ListItem`, `PushRequest/Response`, `PullResponse`. Pushes carry **whole rows with per-field timestamps** rather than an op log: merging is idempotent, so retries need no op IDs.
+- [x] `mergeList` / `mergeItem`: last-write-wins per field group, deterministic tie-breaks, deletion wins. Unit-tested, plus randomised commutativity/associativity/idempotence checks.
 
 **API**
 
-- [ ] `POST /api/sync/push` (batch ≤ 200 ops, idempotent by op id), `GET /api/sync/pull?cursor=` (returns rows with `server_seq > cursor`, including tombstones).
-- [ ] Authorization: every op checks list ownership.
+- [x] `POST /api/sync/push` (≤ 200 rows): merge runs **in SQL inside one D1 batch**, mirroring the JS merge (a test compares them); each row gets a unique `server_seq`. `GET /api/sync/pull?cursor=` pages by seq, including tombstones.
+- [x] Authorization: upserts can't touch other users' lists/items or move items between lists (tested).
 
 **Web**
 
-- [ ] Dexie DB: `lists`, `items`, `outbox`, `meta(cursor)`. UI reads **only** from Dexie (`useLiveQuery`); TanStack Query is not used for list data.
-- [ ] Sync engine: flushes outbox when back online, on app focus, and every 30 s while visible; exponential backoff; pull after push.
-- [ ] List pages: list index, list detail (add / edit / reorder / delete items, quantity), checklist mode (big tap targets, checked items sink, grouped by category once M3 exists).
-- [ ] vite-plugin-pwa: app shell precache, `navigateFallback`, update prompt, manifest + icons. Offline indicator in header.
+- [x] Dexie DB per user: `lists`, `items`, `outbox`, `meta`. UI reads only from Dexie (`useLiveQuery`). Dexie and the list pages are lazy-loaded.
+- [x] Sync engine: pushes until the outbox is empty (edits made mid-push are kept), then pulls. Triggers: startup, `online`, tab focus, 800 ms after an edit, every 30 s while visible. Local edits use `max(now, previous + 1)` timestamps so a slow device clock can't lose a user's own change.
+- [x] Session and prefs cached locally so the app opens offline; sign-out and account deletion delete the local DB (warns if changes are unsynced).
+- [x] List pages: index (cards, progress, quick-start names), detail (add with quantity, inline edit, delete, tick; ticked items move to "In the trolley"; untick all / remove ticked).
+- [ ] Reordering items — deferred.
+- [ ] Group checklist by category — needs M3 categories.
+- [x] vite-plugin-pwa: precaches the shell and all route chunks, `navigateFallback`, update prompt, manifest + icons. Sync status in sidebar and mobile top bar.
 
-**Tests:** merge unit tests; sync route tests; Playwright: create list → go offline → check items → reload → still checked → go online → server has state.
-**Done when:** a list created on phone A appears on phone B (same account), and a full trip works in airplane mode.
+**Tests:** merge unit + property tests; sync route tests (incl. ownership, pagination, SQL/JS merge parity); sync engine tests with fake-indexeddb and a fake server (two devices, offline queue, mid-push edits, rejections); Playwright e2e against the production build: sign up → list → offline reload → tick → online → server has state (runs in CI).
+**Done when:** a list created on phone A appears on phone B (same account), and a full trip works in airplane mode. ✅ Verified locally (deploy deferred with Cloudflare setup).
 
 ### M3 — Chains, stores, products, manual prices
 

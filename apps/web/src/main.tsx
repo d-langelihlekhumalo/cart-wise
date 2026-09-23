@@ -5,8 +5,10 @@ import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import { RedirectIfSignedIn, RequireAuth, RequireOnboarded } from './components/guards';
 import { AppLayout, AuthLayout, PublicLayout } from './components/Layout';
+import { Spinner } from './components/ui';
+import { UpdatePrompt } from './components/UpdatePrompt';
 import { ApiRequestError } from './lib/api';
-import { HomePage, OnboardingPage, SettingsPage } from './routes/app';
+import { OnboardingPage, SettingsPage } from './routes/app';
 import { LoginPage, SignupPage } from './routes/auth';
 import { NotFoundPage, PrivacyPage } from './routes/static';
 import './index.css';
@@ -25,36 +27,45 @@ const queryClient = new QueryClient({
 
 const router = createBrowserRouter([
   {
-    Component: PublicLayout,
-    children: [
-      { path: 'privacy', Component: PrivacyPage },
-      { path: '*', Component: NotFoundPage },
-    ],
-  },
-  {
-    Component: RedirectIfSignedIn,
+    // Shown while a lazily loaded route is fetched on first page load.
+    HydrateFallback: Spinner,
     children: [
       {
-        Component: AuthLayout,
+        Component: PublicLayout,
         children: [
-          { path: 'login', Component: LoginPage },
-          { path: 'signup', Component: SignupPage },
+          { path: 'privacy', Component: PrivacyPage },
+          { path: '*', Component: NotFoundPage },
         ],
       },
-    ],
-  },
-  {
-    Component: RequireAuth,
-    children: [
-      { Component: AuthLayout, children: [{ path: 'onboarding', Component: OnboardingPage }] },
       {
-        Component: RequireOnboarded,
+        Component: RedirectIfSignedIn,
         children: [
           {
-            Component: AppLayout,
+            Component: AuthLayout,
             children: [
-              { index: true, Component: HomePage },
-              { path: 'settings', Component: SettingsPage },
+              { path: 'login', Component: LoginPage },
+              { path: 'signup', Component: SignupPage },
+            ],
+          },
+        ],
+      },
+      {
+        Component: RequireAuth,
+        children: [
+          { Component: AuthLayout, children: [{ path: 'onboarding', Component: OnboardingPage }] },
+          {
+            Component: RequireOnboarded,
+            children: [
+              {
+                Component: AppLayout,
+                children: [
+                  // Lists need IndexedDB (Dexie); load those routes on demand.
+                  { index: true, lazy: () => import('./features/lists/HomePage') },
+                  { path: 'lists', lazy: () => import('./features/lists/ListsPage') },
+                  { path: 'lists/:listId', lazy: () => import('./features/lists/ListDetailPage') },
+                  { path: 'settings', Component: SettingsPage },
+                ],
+              },
             ],
           },
         ],
@@ -70,6 +81,7 @@ createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
+      <UpdatePrompt />
     </QueryClientProvider>
   </StrictMode>,
 );

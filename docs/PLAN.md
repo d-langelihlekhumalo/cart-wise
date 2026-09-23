@@ -132,9 +132,11 @@ Rules: money in integer cents; member price separate; promos structural; sizes n
 
 ## 8. Milestones
 
+Deploys are deferred until the Cloudflare account is set up; M1–M2 are verified locally and in CI.
+
 - [x] **M0 Bootstrap:** git, pnpm workspace, TS/ESLint/Prettier/Vitest, CI
-- [ ] **M1 Foundation:** Worker serves React, D1 + Drizzle, auth, prefs, account deletion, privacy page, deploy pipeline
-- [ ] **M2 Lists:** list CRUD, offline sync, offline checklist, PWA shell
+- [x] **M1 Foundation:** Worker serves React, D1 + Drizzle, auth, prefs, account deletion, privacy page, deploy pipeline
+- [x] **M2 Lists:** list CRUD, offline sync, offline checklist, PWA shell
 - [ ] **M3 Prices:** chains, stores, taxonomy, products, manual price entry, loyalty cards, my stores
 - [ ] **M4 Pamphlets:** upload, queue, extraction, review screen, approval, expiry cron
 - [ ] **M5 Recommendations:** unit prices, loyalty cards, split trips, budget mode, trip snapshot

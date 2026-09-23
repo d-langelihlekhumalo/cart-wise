@@ -2,7 +2,7 @@
 
 A grocery price tracker and shopping-list recommender for South Africa. Upload store pamphlets, build a list, and find out where it's cheapest (one store, or a two-store split), taking loyalty-card prices and your budget into account. Shopping mode works fully offline.
 
-> **Status:** early development. Accounts, onboarding, settings and account deletion work locally (M1); lists and the offline checklist are next. See [the plan](docs/PLAN.md).
+> **Status:** early development. Accounts, settings, and offline-first shopping lists that sync across devices work locally (M1–M2); stores and prices are next. See [the plan](docs/PLAN.md).
 
 ## Stack
 
