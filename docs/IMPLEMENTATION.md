@@ -95,7 +95,7 @@ Each milestone ends with: tests green, `docs/PLAN.md` checkbox ticked, deployed 
 - [x] pnpm workspace, `tsconfig.base.json`, ESLint + Prettier, Vitest (per-workspace `test` scripts). `packages/shared` starts with the money helpers; `apps/web`, `apps/api`, `packages/db` are generated in M1 with their real tooling.
 - [x] Put `CLAUDE.md`, `docs/PLAN.md`, this file in the repo; update CLAUDE.md with the commands + conventions from §0/§1.
 - [x] `ci.yml` written.
-- [ ] GitHub repo created and pushed; CI green on GitHub.
+- [x] GitHub repo created and pushed; CI green on GitHub.
 
 **Done when:** `pnpm lint && pnpm typecheck && pnpm test && pnpm build` passes locally and in CI on an empty skeleton.
 

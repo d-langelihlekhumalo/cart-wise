@@ -132,7 +132,7 @@ Rules: money in integer cents; member price separate; promos structural; sizes n
 
 ## 8. Milestones
 
-- [ ] **M0 Bootstrap:** git, pnpm workspace, TS/ESLint/Prettier/Vitest, CI
+- [x] **M0 Bootstrap:** git, pnpm workspace, TS/ESLint/Prettier/Vitest, CI
 - [ ] **M1 Foundation:** Worker serves React, D1 + Drizzle, auth, prefs, account deletion, privacy page, deploy pipeline
 - [ ] **M2 Lists:** list CRUD, offline sync, offline checklist, PWA shell
 - [ ] **M3 Prices:** chains, stores, taxonomy, products, manual price entry, loyalty cards, my stores
