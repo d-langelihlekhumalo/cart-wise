@@ -14,7 +14,10 @@ export default defineConfig({
   },
   projects: [{ name: 'mobile-chrome', use: { ...devices['Pixel 7'] } }],
   webServer: {
-    command: 'pnpm exec vite preview --port 5180 --strictPort',
+    // Run Vite directly: pnpm's launcher doesn't forward the stop signal, which left the
+    // server (and the CI job) running after the tests finished.
+    command: 'node ./node_modules/vite/bin/vite.js preview --port 5180 --strictPort',
+    gracefulShutdown: { signal: 'SIGTERM', timeout: 5_000 },
     url: 'http://localhost:5180/api/health',
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
