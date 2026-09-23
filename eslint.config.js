@@ -1,11 +1,20 @@
 // @ts-check
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/coverage/**', '**/.wrangler/**', 'packages/db/migrations/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/coverage/**',
+      '**/.wrangler/**',
+      'packages/db/migrations/**',
+      '**/worker-configuration.d.ts',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
@@ -25,8 +34,17 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.js'],
+    files: ['apps/web/src/**/*.{ts,tsx}'],
+    ...reactHooks.configs.flat.recommended,
+    languageOptions: { globals: { ...globals.browser } },
+  },
+  {
+    files: ['**/*.{js,mjs}'],
     ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    files: ['**/*.{js,mjs}'],
+    languageOptions: { globals: { ...globals.node } },
   },
   prettier,
 );

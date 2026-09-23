@@ -3,3 +3,4 @@ dist/
 coverage/
 .wrangler/
 packages/db/migrations/
+**/worker-configuration.d.ts

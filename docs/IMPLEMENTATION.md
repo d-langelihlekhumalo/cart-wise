@@ -103,22 +103,23 @@ Each milestone ends with: tests green, `docs/PLAN.md` checkbox ticked, deployed 
 
 **API/infra**
 
-- [ ] `wrangler.jsonc` with `staging`/`production` envs, D1 binding, `nodejs_compat`, assets config with SPA fallback.
-- [ ] Hono app: `/api/health`, error handler (Zod errors → 400 with issues), request logging, `requireUser` middleware.
-- [ ] Drizzle schema: auth tables, `regions`, `user_prefs`. First migration + seed regions.
-- [ ] Better Auth mounted at `/api/auth/*`; session cookie `HttpOnly`, `Secure`, `SameSite=Lax`.
-- [ ] `GET/PUT /api/me/prefs`, `DELETE /api/me` (POPIA: cascades all user data; R2 objects queued for deletion in M4).
+- [x] `wrangler.jsonc` with D1 binding, `nodejs_compat`, assets config with SPA fallback (`run_worker_first: /api/*`).
+- [ ] `staging`/`production` envs with real D1 IDs — **deferred until the Cloudflare account is set up.**
+- [x] Hono app: `/api/health`, error handler (Zod errors → 400 with issues), `requireUser` middleware. Request logs come from Workers observability (enabled in `wrangler.jsonc`).
+- [x] Drizzle schema: auth tables, `regions`, `user_prefs`. First migration + seed regions.
+- [x] Better Auth mounted at `/api/auth/*` (defaults: `HttpOnly`, `SameSite=Lax`, `Secure` on https). ULID ids; `trust` field not user-settable (tested).
+- [x] `GET/PUT /api/me/prefs`, `DELETE /api/me` (POPIA: cascades all user data; R2 objects queued for deletion in M4).
 
 **Web**
 
-- [ ] Vite + React + Router + TanStack Query + Tailwind shell; routes: `/`, `/login`, `/signup`, `/settings`, `/privacy`.
-- [ ] Typed API client (`hc` from Hono or a thin fetch wrapper using shared Zod schemas).
-- [ ] Onboarding: choose region after signup.
-- [ ] Privacy policy page (what is collected, why, retention, deletion).
+- [x] Vite + React + Router + TanStack Query + Tailwind shell; routes: `/`, `/login`, `/signup`, `/settings`, `/privacy`.
+- [x] Typed API client: thin fetch wrapper validating responses with the shared schemas (`zod/mini`, see ADR 0002). Initial JS budget enforced by `pnpm size` in CI.
+- [x] Onboarding: choose region after signup.
+- [x] Privacy policy page (what is collected, why, retention, deletion).
 
 **Deploy**
 
-- [ ] `deploy.yml`: on `main` → apply D1 migrations to staging → `wrangler deploy --env staging`. Manual dispatch → production.
+- [ ] **Deferred until Cloudflare is set up:** `deploy.yml`: on `main` → apply D1 migrations to staging → `wrangler deploy --env staging`. Manual dispatch → production.
 
 **Tests:** auth sign-up/sign-in flow on the Workers pool; prefs validation; account deletion removes rows.
 **Done when:** a user can sign up on the production URL, set a region, and delete their account.

@@ -1,5 +1,5 @@
 {
-  "name": "@cart-wise/shared",
+  "name": "@cart-wise/db",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -7,11 +7,14 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest run",
+    "generate": "drizzle-kit generate",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "ulid": "^3.0.2",
-    "zod": "^4.6.5"
+    "@cart-wise/shared": "workspace:*",
+    "drizzle-orm": "^0.45.3"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.11"
   }
 }

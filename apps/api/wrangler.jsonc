@@ -1,0 +1,25 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  // One Worker serves the API (/api/*) and the React app (static assets, built by apps/web).
+  "name": "cart-wise",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
+  },
+  "vars": {
+    "BETTER_AUTH_URL": "http://localhost:5180",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cart-wise",
+      // Placeholder until the Cloudflare account is set up; local dev and tests don't need a real ID.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "../../packages/db/migrations",
+    },
+  ],
+}

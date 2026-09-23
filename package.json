@@ -7,19 +7,24 @@
     "node": ">=24"
   },
   "scripts": {
+    "dev": "pnpm --filter @cart-wise/web dev",
     "build": "pnpm -r --if-present build",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test"
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
+    "size": "pnpm --filter @cart-wise/web size",
+    "db:generate": "pnpm --filter @cart-wise/db generate",
+    "db:migrate:local": "pnpm --filter @cart-wise/api db:migrate:local"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.13.6",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.12.0",
     "prettier": "^3.9.9",
     "typescript": "~6.0.3",

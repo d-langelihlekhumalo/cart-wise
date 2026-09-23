@@ -2,7 +2,7 @@
 
 A grocery price tracker and shopping-list recommender for South Africa. Upload store pamphlets, build a list, and find out where it's cheapest (one store, or a two-store split), taking loyalty-card prices and your budget into account. Shopping mode works fully offline.
 
-> **Status:** early development — M0 (project bootstrap) complete. See [the plan](docs/PLAN.md).
+> **Status:** early development. Accounts, onboarding, settings and account deletion work locally (M1); lists and the offline checklist are next. See [the plan](docs/PLAN.md).
 
 ## Stack
 
@@ -15,8 +15,12 @@ Requires Node 24 and pnpm (via corepack).
 ```sh
 corepack enable pnpm
 pnpm install
-pnpm check
+cp apps/api/.dev.vars.example apps/api/.dev.vars   # then set BETTER_AUTH_SECRET
+pnpm db:migrate:local
+pnpm dev                                          # http://localhost:5180
 ```
+
+`pnpm check` runs lint, formatting, type checks and all tests.
 
 ## Docs
 

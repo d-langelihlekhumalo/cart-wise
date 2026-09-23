@@ -18,17 +18,33 @@ pnpm format           # Prettier write
 pnpm typecheck        # tsc in every workspace
 pnpm test             # Vitest in every workspace
 pnpm --filter @cart-wise/shared test   # one workspace
+pnpm size             # build first; fails if initial JS > 150 KB gzip
+
+pnpm dev              # app + API on http://localhost:5180 (port must match BETTER_AUTH_URL)
+pnpm db:generate      # generate a migration from packages/db/src/schema changes
+pnpm db:migrate:local # apply migrations to the local D1 used by `pnpm dev`
+pnpm --filter @cart-wise/api types   # regenerate worker-configuration.d.ts after editing wrangler.jsonc
 ```
 
-Dev server, D1 migrations, seeding and deploy commands are added in M1 — list them here when they exist.
+First run: copy `apps/api/.dev.vars.example` to `apps/api/.dev.vars` and set `BETTER_AUTH_SECRET` (`openssl rand -base64 32`), then `pnpm db:migrate:local`.
+
+Deploy commands arrive when the Cloudflare account is set up.
+
+## How the pieces fit
+
+- `apps/api/wrangler.jsonc` defines the single Worker. `apps/web/vite.config.ts` runs it via `@cloudflare/vite-plugin` (`configPath`), so `pnpm dev` / `vite build` produce the Worker plus the SPA as its static assets.
+- API tests run inside workerd via `@cloudflare/vitest-pool-workers`, with migrations applied to a fresh D1 (`apps/api/test/apply-migrations.ts`). Use `test/helpers.ts` (`api`, `signUp`, `authed`).
+- Web unit tests use `apps/web/vitest.config.ts` (not `vite.config.ts` — the Cloudflare plugin can't run under Vitest).
+- Local D1 state for dev lives in `/.wrangler/state`, shared by `pnpm dev` and `pnpm db:migrate:local`.
+- The API compatibility date is capped by the workerd bundled in `@cloudflare/vitest-pool-workers`; tests fail to start if it's newer.
 
 ## Repo layout
 
 ```
-apps/web          React PWA (M1)
-apps/api          Hono Worker: API + queue consumer + cron (M1)
+apps/web          React PWA (Vite, React Router, TanStack Query, Tailwind)
+apps/api          Hono Worker: API (+ queue consumer + cron later); owns wrangler.jsonc
 packages/shared   Zod schemas, types, money/unit-price/promo maths, recommendation engine (pure)
-packages/db       Drizzle schema + migrations + seed (M1)
+packages/db       Drizzle schema + migrations (applied by Wrangler)
 docs/             PLAN.md, IMPLEMENTATION.md, adr/
 ```
 
@@ -42,7 +58,7 @@ docs/             PLAN.md, IMPLEMENTATION.md, adr/
 - **Promos are structural** (`promo_type`: `none` | `multibuy` | `buy_x_get_y`, with `promo_qty` / `promo_price_cents` / `promo_free_qty`). Never flatten into a fake per-unit price.
 - **Sizes normalized** to `size_value` + `size_unit` (`g` | `ml` | `each`) + `pack_count`; `sold_by_weight` for per-kg items. Compare by unit price.
 - **Prices are scoped** by chain + region (+ optional store). Most specific scope wins. Spar varies per store.
-- Shared Zod schemas in `packages/shared` are the source of truth for API types on both ends.
+- Shared Zod schemas in `packages/shared` are the source of truth for API types on both ends. They use `zod/mini` (ADR 0002); API errors are always `{ error: { code, message, issues? } }`.
 - Business logic that must work offline (merge, pricing, recommendation) is pure functions in `packages/shared`, heavily unit-tested.
 - Strict TypeScript (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`). No `any`; if unavoidable, disable the lint rule on that line with a comment explaining why.
 - Keep the web bundle light (initial JS ≤ 150 KB gzip) — SA mobile data is expensive. Lazy-load heavy routes (pdf.js, review screen). Compress images client-side before upload.

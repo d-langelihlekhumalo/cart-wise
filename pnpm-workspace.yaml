@@ -1,5 +1,11 @@
 packages:
   - apps/*
   - packages/*
+allowBuilds:
+  esbuild: true
+  workerd: true
 minimumReleaseAgeExclude:
   - prettier@3.9.9
+  - '@cloudflare/workers-types@5.20260923.1'
+  - wrangler@4.137.0
+  - '@cloudflare/vite-plugin@1.58.0'
