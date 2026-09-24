@@ -24,6 +24,7 @@ pnpm test:e2e         # Playwright vs the production build (build + db:migrate:l
 pnpm dev              # app + API on http://localhost:5180 (port must match BETTER_AUTH_URL)
 pnpm db:generate      # generate a migration from packages/db/src/schema changes
 pnpm db:migrate:local # apply migrations to the local D1 used by `pnpm dev`
+pnpm db:seed:generate # regenerate the catalogue seed migration from packages/db/seed/catalogue.ts
 pnpm --filter @cart-wise/api types   # regenerate worker-configuration.d.ts after editing wrangler.jsonc
 ```
 
@@ -38,6 +39,9 @@ Deploy commands arrive when the Cloudflare account is set up.
 - Web unit tests use `apps/web/vitest.config.ts` (not `vite.config.ts` — the Cloudflare plugin can't run under Vitest).
 - Local D1 state for dev lives in `/.wrangler/state`, shared by `pnpm dev` and `pnpm db:migrate:local`.
 - Lists are offline-first: UI reads/writes Dexie (`apps/web/src/features/lists`), `SyncEngine` pushes/pulls `/api/sync`. The merge rules exist twice, in `packages/shared/src/sync/merge.ts` (client) and SQL in `apps/api/src/routes/sync.ts` (server); change both together.
+- Product search is SQLite FTS5 (`products_fts`, custom SQL migrations; triggers keep it in sync). Drizzle doesn't model it — change it with a new custom migration.
+- Routers mounted at the API root must attach `requireUser` per route, not with `.use()`, or they'd also guard `/api/health` and `/api/auth`.
+- Pricing maths (`unitPrice`, `lineCost`, `resolveStorePrice`) lives in `packages/shared/src/pricing`; M5's recommendation engine builds on it.
 - Anything that needs Dexie stays in lazily loaded modules (route `lazy` or dynamic `import()`); the main bundle only has `lib/sync-status.ts`.
 - Service worker only exists in builds; test offline behaviour with `pnpm build` + `vite preview` or `pnpm test:e2e`.
 - The API compatibility date is capped by the workerd bundled in `@cloudflare/vitest-pool-workers`; tests fail to start if it's newer.

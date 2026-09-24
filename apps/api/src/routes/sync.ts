@@ -50,16 +50,24 @@ const CONTENT_FROM_EXCLUDED = `(
   excluded.content_updated_at > list_items.content_updated_at
   OR (excluded.content_updated_at = list_items.content_updated_at AND (
     excluded.text > list_items.text
-    OR (excluded.text = list_items.text AND excluded.quantity > list_items.quantity))))`;
+    OR (excluded.text = list_items.text AND (
+      excluded.quantity > list_items.quantity
+      OR (excluded.quantity = list_items.quantity AND (
+        coalesce(excluded.product_type_id, '') > coalesce(list_items.product_type_id, '')
+        OR (coalesce(excluded.product_type_id, '') = coalesce(list_items.product_type_id, '')
+          AND coalesce(excluded.product_id, '') > coalesce(list_items.product_id, '')))))))))`;
 
 const UPSERT_ITEM = `
 INSERT INTO list_items (id, list_id, text, quantity, content_updated_at, checked,
-  checked_updated_at, created_at, deleted_at, server_seq)
-SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ${SEQ} - ?10
+  checked_updated_at, created_at, deleted_at, server_seq, product_type_id, product_id)
+SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ${SEQ} - ?10, ?12, ?13
 WHERE EXISTS (SELECT 1 FROM lists WHERE id = ?2 AND owner_id = ?11)
 ON CONFLICT (id) DO UPDATE SET
   text = CASE WHEN ${CONTENT_FROM_EXCLUDED} THEN excluded.text ELSE list_items.text END,
   quantity = CASE WHEN ${CONTENT_FROM_EXCLUDED} THEN excluded.quantity ELSE list_items.quantity END,
+  product_type_id = CASE WHEN ${CONTENT_FROM_EXCLUDED}
+    THEN excluded.product_type_id ELSE list_items.product_type_id END,
+  product_id = CASE WHEN ${CONTENT_FROM_EXCLUDED} THEN excluded.product_id ELSE list_items.product_id END,
   content_updated_at = max(list_items.content_updated_at, excluded.content_updated_at),
   checked = CASE
     WHEN excluded.checked_updated_at > list_items.checked_updated_at
@@ -87,6 +95,8 @@ interface ItemRow {
   list_id: string;
   text: string;
   quantity: number;
+  product_type_id: string | null;
+  product_id: string | null;
   content_updated_at: number;
   checked: number;
   checked_updated_at: number;
@@ -115,6 +125,8 @@ const toItem = (r: ItemRow): ListItem => ({
   listId: r.list_id,
   text: r.text,
   quantity: r.quantity,
+  productTypeId: r.product_type_id,
+  productId: r.product_id,
   contentUpdatedAt: r.content_updated_at,
   checked: r.checked === 1,
   checkedUpdatedAt: r.checked_updated_at,
@@ -181,6 +193,8 @@ export const sync = new Hono<AppEnv>()
             it.deletedAt,
             offset(lists.length + i),
             userId,
+            it.productTypeId ?? null,
+            it.productId ?? null,
           ),
       ),
     ]);

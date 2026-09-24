@@ -21,3 +21,7 @@ export const REGION_IDS = REGIONS.map((r) => r.id) as [RegionId, ...RegionId[]];
 export function regionName(id: RegionId): string {
   return REGIONS.find((r) => r.id === id)?.name ?? id;
 }
+
+export function isRegionId(value: string): value is RegionId {
+  return (REGION_IDS as string[]).includes(value);
+}

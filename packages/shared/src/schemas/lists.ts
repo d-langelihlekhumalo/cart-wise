@@ -31,6 +31,13 @@ export const listItemSchema = z.object({
   /** "Content" fields are edited together and share one timestamp. */
   text: trimmed(ITEM_TEXT_MAX),
   quantity: z.int().check(z.minimum(1), z.maximum(ITEM_QUANTITY_MAX)),
+  /**
+   * Optional catalogue links, part of the content group. "bread" → a product type (vague);
+   * "Albany Superior White 700g" → a product (specific). Optional so rows saved before M3 stay
+   * valid; treat undefined as null.
+   */
+  productTypeId: z.optional(z.nullable(z.string().check(z.maxLength(64)))),
+  productId: z.optional(z.nullable(z.string().check(z.maxLength(64)))),
   contentUpdatedAt: timestamp,
   checked: z.boolean(),
   checkedUpdatedAt: timestamp,

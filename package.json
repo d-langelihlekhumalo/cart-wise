@@ -18,7 +18,8 @@
     "size": "pnpm --filter @cart-wise/web size",
     "db:generate": "pnpm --filter @cart-wise/db generate",
     "db:migrate:local": "pnpm --filter @cart-wise/api db:migrate:local",
-    "test:e2e": "pnpm --filter @cart-wise/web test:e2e"
+    "test:e2e": "pnpm --filter @cart-wise/web test:e2e",
+    "db:seed:generate": "pnpm --filter @cart-wise/db seed:generate"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

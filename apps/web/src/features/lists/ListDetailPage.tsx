@@ -17,8 +17,10 @@ import {
   TrashIcon,
 } from '../../components/icons';
 import { Button, Card, Spinner } from '../../components/ui';
+import { type CatalogueIndex, matchProductTypes, useCatalogue } from '../../lib/catalogue';
 import { useItems, useList, useListStore } from './hooks';
-import type { ListStore } from './store';
+import { ItemSuggestions } from './ItemSuggestions';
+import type { ItemLink, ListStore } from './store';
 
 const inputClass =
   'min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 shadow-sm focus:border-brand-600 focus:ring-2 focus:ring-brand-600/30 focus:outline-none';
@@ -28,6 +30,7 @@ export function Component() {
   const list = useList(listId);
   const items = useItems(listId);
   const store = useListStore();
+  const { catalogue } = useCatalogue();
 
   if (list === undefined || items === undefined) return <Spinner />;
   if (list === null) {
@@ -70,11 +73,7 @@ export function Component() {
                   : 'Everything is in the trolley.'}
               </p>
             ) : (
-              <ul className="divide-y divide-stone-100">
-                {toGet.map((item) => (
-                  <ItemRow key={item.id} item={item} store={store} />
-                ))}
-              </ul>
+              <GroupedItems items={toGet} store={store} catalogue={catalogue} />
             )}
           </Card>
 
@@ -233,34 +232,63 @@ function IconButton({
 function AddItemForm({ listId, store }: { listId: string; store: ListStore }) {
   const [text, setText] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [suggesting, setSuggesting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { catalogue } = useCatalogue();
+
+  function add(itemText: string, link: ItemLink) {
+    void store.addItem(listId, itemText, quantity, link);
+    setText('');
+    setQuantity(1);
+    setSuggesting(false);
+    inputRef.current?.focus();
+  }
 
   function onSubmit(e: SubmitEvent) {
     e.preventDefault();
     if (!text.trim()) return;
-    void store.addItem(listId, text, quantity);
-    setText('');
-    setQuantity(1);
-    inputRef.current?.focus();
+    // Typed an exact product type name ("Eggs")? Link it so it's grouped and priced.
+    const exact = catalogue
+      ? matchProductTypes(catalogue, text, 1).find(
+          (t) => t.name.toLowerCase() === text.trim().toLowerCase(),
+        )
+      : undefined;
+    add(text, exact ? { productTypeId: exact.id } : {});
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-wrap gap-2 sm:flex-nowrap">
-      <label htmlFor="new-item" className="sr-only">
-        Item
-      </label>
-      <input
-        id="new-item"
-        ref={inputRef}
-        value={text}
-        maxLength={ITEM_TEXT_MAX}
-        placeholder="Add an item, e.g. White bread or Clover milk 2L"
-        autoComplete="off"
-        onChange={(e) => {
-          setText(e.target.value);
-        }}
-        className={`${inputClass} flex-1 basis-full sm:basis-auto`}
-      />
+      <div className="relative flex-1 basis-full sm:basis-auto">
+        <label htmlFor="new-item" className="sr-only">
+          Item
+        </label>
+        <input
+          id="new-item"
+          ref={inputRef}
+          value={text}
+          maxLength={ITEM_TEXT_MAX}
+          placeholder="Add an item, e.g. White bread or Clover milk 2L"
+          autoComplete="off"
+          aria-autocomplete="list"
+          onChange={(e) => {
+            setText(e.target.value);
+            setSuggesting(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setSuggesting(false);
+          }}
+          className={inputClass}
+        />
+        {suggesting && (
+          <ItemSuggestions
+            text={text}
+            catalogue={catalogue}
+            onPick={(s) => {
+              add(s.text, s.link);
+            }}
+          />
+        )}
+      </div>
       <QuantityStepper value={quantity} onChange={setQuantity} />
       <Button type="submit" disabled={!text.trim()} className="flex-1 gap-1 sm:flex-none">
         <PlusIcon className="size-4" />
@@ -302,10 +330,77 @@ function QuantityStepper({ value, onChange }: { value: number; onChange: (n: num
   );
 }
 
-function ItemRow({ item, store }: { item: ListItem; store: ListStore }) {
+/** Items grouped by aisle (category order); unlinked items go last under "Other". */
+function GroupedItems({
+  items,
+  store,
+  catalogue,
+}: {
+  items: ListItem[];
+  store: ListStore;
+  catalogue: CatalogueIndex | undefined;
+}) {
+  const categoryOf = (item: ListItem) => {
+    const type = item.productTypeId ? catalogue?.typeById.get(item.productTypeId) : undefined;
+    return type ? catalogue?.categoryById.get(type.categoryId) : undefined;
+  };
+  const groups = new Map<string, { name: string; sort: number; items: ListItem[] }>();
+  for (const item of items) {
+    const cat = categoryOf(item);
+    const key = cat?.id ?? 'other';
+    const group = groups.get(key) ?? {
+      name: cat?.name ?? 'Other',
+      sort: cat?.sort ?? Number.MAX_SAFE_INTEGER,
+      items: [],
+    };
+    group.items.push(item);
+    groups.set(key, group);
+  }
+  const ordered = [...groups.values()].sort((a, b) => a.sort - b.sort);
+  // One unlabelled group reads better than a lone "Other" heading.
+  const showHeadings = ordered.length > 1 || ordered[0]?.name !== 'Other';
+
+  return (
+    <div>
+      {ordered.map((group) => (
+        <section key={group.name} aria-label={showHeadings ? group.name : undefined}>
+          {showHeadings && (
+            <h3 className="bg-stone-50 px-4 py-1.5 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+              {group.name}
+            </h3>
+          )}
+          <ul className="divide-y divide-stone-100">
+            {group.items.map((item) => (
+              <ItemRow
+                key={item.id}
+                item={item}
+                store={store}
+                typeName={
+                  item.productTypeId ? catalogue?.typeById.get(item.productTypeId)?.name : undefined
+                }
+              />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function ItemRow({
+  item,
+  store,
+  typeName,
+}: {
+  item: ListItem;
+  store: ListStore;
+  typeName?: string | undefined;
+}) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(item.text);
   const [quantity, setQuantity] = useState(item.quantity);
+  const [suggesting, setSuggesting] = useState(false);
+  const { catalogue } = useCatalogue();
 
   function save(e: SubmitEvent) {
     e.preventDefault();
@@ -317,22 +412,37 @@ function ItemRow({ item, store }: { item: ListItem; store: ListStore }) {
     return (
       <li className="px-4 py-3">
         <form onSubmit={save} className="flex flex-wrap gap-2 sm:flex-nowrap">
-          <label htmlFor={`edit-${item.id}`} className="sr-only">
-            Item
-          </label>
-          <input
-            id={`edit-${item.id}`}
-            autoFocus
-            value={text}
-            maxLength={ITEM_TEXT_MAX}
-            onChange={(e) => {
-              setText(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') setEditing(false);
-            }}
-            className={`${inputClass} flex-1 basis-full sm:basis-auto`}
-          />
+          <div className="relative flex-1 basis-full sm:basis-auto">
+            <label htmlFor={`edit-${item.id}`} className="sr-only">
+              Item
+            </label>
+            <input
+              id={`edit-${item.id}`}
+              autoFocus
+              value={text}
+              maxLength={ITEM_TEXT_MAX}
+              autoComplete="off"
+              onChange={(e) => {
+                setText(e.target.value);
+                setSuggesting(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setEditing(false);
+              }}
+              className={inputClass}
+            />
+            {suggesting && (
+              <ItemSuggestions
+                text={text}
+                catalogue={catalogue}
+                onPick={(s) => {
+                  void store.updateItem(item.id, { text: s.text, quantity, ...s.link });
+                  setEditing(false);
+                  setSuggesting(false);
+                }}
+              />
+            )}
+          </div>
           <QuantityStepper value={quantity} onChange={setQuantity} />
           <Button type="submit">Save</Button>
         </form>
@@ -357,8 +467,27 @@ function ItemRow({ item, store }: { item: ListItem; store: ListStore }) {
         >
           {item.checked && <CheckIcon className="size-4" />}
         </span>
-        <span className={`flex-1 ${item.checked ? 'text-stone-400 line-through' : ''}`}>
-          {item.text}
+        <span className="min-w-0 flex-1">
+          <span className={`block ${item.checked ? 'text-stone-400 line-through' : ''}`}>
+            {item.text}
+          </span>
+          {!item.checked && item.productId && (
+            <Link
+              to={`/products/${item.productId}`}
+              className="text-xs font-medium text-brand-700 hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              See prices
+            </Link>
+          )}
+          {!item.checked &&
+            !item.productId &&
+            typeName &&
+            typeName.toLowerCase() !== item.text.toLowerCase() && (
+              <span className="text-xs text-stone-500">Any {typeName.toLowerCase()}</span>
+            )}
         </span>
         {item.quantity > 1 && (
           <span className="rounded-md bg-stone-100 px-2 py-0.5 text-sm font-medium text-stone-700 tabular-nums">

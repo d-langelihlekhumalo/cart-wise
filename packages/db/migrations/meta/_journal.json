@@ -22,6 +22,34 @@
       "when": 1790197524065,
       "tag": "0002_lists",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1790232812428,
+      "tag": "0003_catalogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790232831047,
+      "tag": "0004_product_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1790232938628,
+      "tag": "0005_seed_catalogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1790251542556,
+      "tag": "0006_search_sizes",
+      "breakpoints": true
     }
   ]
 }

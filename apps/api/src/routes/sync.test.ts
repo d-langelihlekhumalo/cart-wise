@@ -28,6 +28,8 @@ function makeItem(listId: string, overrides: Partial<ListItem> = {}): ListItem {
     listId,
     text: 'Bread',
     quantity: 1,
+    productTypeId: null,
+    productId: null,
     contentUpdatedAt: 1000,
     checked: false,
     checkedUpdatedAt: 1000,
@@ -116,6 +118,28 @@ describe('sync', () => {
     const listRes = await push(cookie, { lists: [stale] });
     expect(listRes.lists[0]).toEqual(mergeList(renamed, stale));
     expect(listRes.lists[0]?.name).toBe('Month-end shop');
+  });
+
+  it('syncs catalogue links and merges them like the client', async () => {
+    const { cookie } = await signUp();
+    const list = makeList();
+    const base = makeItem(list.id, { text: 'bread' });
+    await push(cookie, { lists: [list], items: [base] });
+
+    const linked = { ...base, productTypeId: 'white-bread', contentUpdatedAt: 2000 };
+    const tie = { ...linked, productId: 'seed-albany-superior-white-bread-1x700g' };
+    await push(cookie, { items: [linked] });
+    const res = await push(cookie, { items: [tie] });
+    expect(res.items[0]).toEqual(mergeItem(mergeItem(base, linked), tie));
+    expect(res.items[0]).toMatchObject({
+      productTypeId: 'white-bread',
+      productId: 'seed-albany-superior-white-bread-1x700g',
+    });
+
+    // Rows from clients that predate links are accepted and stored unlinked.
+    const { productTypeId: _t, productId: _p, ...legacy } = makeItem(list.id);
+    const legacyRes = await push(cookie, { items: [legacy] });
+    expect(legacyRes.items[0]).toMatchObject({ productTypeId: null, productId: null });
   });
 
   it('keeps deletions and sends tombstones to other devices', async () => {

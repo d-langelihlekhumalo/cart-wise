@@ -12,6 +12,12 @@ import { type LocalDb, outboxEntry } from './db';
 
 type Nudge = () => void;
 
+/** Optional catalogue link for an item: a product type (vague) and/or an exact product. */
+export interface ItemLink {
+  productTypeId?: string | null;
+  productId?: string | null;
+}
+
 /**
  * Timestamp for a local edit that always beats the version the user is looking at, even if
  * this device's clock is behind the one that wrote it.
@@ -75,13 +81,15 @@ export class ListStore {
     await this.writeList({ ...list, deletedAt: nextTs() });
   }
 
-  async addItem(listId: string, text: string, quantity = 1): Promise<string> {
+  async addItem(listId: string, text: string, quantity = 1, link: ItemLink = {}): Promise<string> {
     const now = nextTs();
     const item: ListItem = {
       id: newId(),
       listId,
       text: clampText(text, ITEM_TEXT_MAX),
       quantity: clampQuantity(quantity),
+      productTypeId: link.productTypeId ?? null,
+      productId: link.productId ?? null,
       contentUpdatedAt: now,
       checked: false,
       checkedUpdatedAt: now,
@@ -92,7 +100,10 @@ export class ListStore {
     return item.id;
   }
 
-  async updateItem(id: string, changes: { text?: string; quantity?: number }): Promise<void> {
+  async updateItem(
+    id: string,
+    changes: { text?: string; quantity?: number } & ItemLink,
+  ): Promise<void> {
     const item = await this.db.items.get(id);
     if (!item) return;
     await this.writeItems([
@@ -100,6 +111,11 @@ export class ListStore {
         ...item,
         text: changes.text === undefined ? item.text : clampText(changes.text, ITEM_TEXT_MAX),
         quantity: changes.quantity === undefined ? item.quantity : clampQuantity(changes.quantity),
+        productTypeId:
+          changes.productTypeId === undefined
+            ? (item.productTypeId ?? null)
+            : changes.productTypeId,
+        productId: changes.productId === undefined ? (item.productId ?? null) : changes.productId,
         contentUpdatedAt: nextTs(item.contentUpdatedAt),
       },
     ]);

@@ -153,32 +153,36 @@ Each milestone ends with: tests green, `docs/PLAN.md` checkbox ticked, deployed 
 
 **Data**
 
-- [ ] Seed script (`packages/db/seed`): major chains + loyalty programs, ~20 categories, ~150 product types, ~300 common products for one metro (Gauteng first), a handful of stores.
-- [ ] `prices`, taxonomy, `products_fts`, `user_loyalty_cards`, `user_stores` migrations.
+- [x] Seed (`packages/db/seed/catalogue.ts` → `pnpm db:seed:generate` → migration SQL): 17 chains incl. informal (spaza, butchery, fruit & veg) with loyalty programmes, 15 categories in aisle order, 79 product types, 84 widely stocked products. **Deviations:** smaller than planned, to keep it to products and sizes that are confidently real; no prices and **no store locations** are seeded (users add the stores they shop at), so nothing pretends to be observed data.
+- [x] Migrations: `chains`, `stores`, `categories`, `product_types`, `products`, append-only `prices`, `user_loyalty_cards`, `user_stores`; `list_items.product_type_id/product_id`.
+- [x] FTS5 `products_fts` kept in sync by triggers; indexes name, brand, product type name and **pack size** ("10kg 10 kg 10000g"), with diacritics folded.
 
 **Shared**
 
-- [ ] `unitPrice(product, priceCents)` → cents per 100 g / 100 ml / each (accounting for `pack_count`, `sold_by_weight`).
-- [ ] `lineCost(price, qty, heldCards)` — applies member price only if the card is held, multibuy/BOGOF only when `qty` qualifies; exhaustively unit-tested.
-- [ ] `resolveCurrentPrice(rows, store, today)` — scope specificity + staleness rules (D4/D5).
+- [x] `normalizeSize`, `formatSize`, `unitPrice`, `formatUnitPrice` (pack count, sold by weight).
+- [x] `lineCost(terms, qty, hasCard)`: member price only with the card, multibuy / buy-X-get-Y on complete bundles only, never worse than buying singly, member-only promos.
+- [x] `resolveStorePrice(rows, store, now)`: store > region > national, newest first; regular prices stale after 60 days (kept as "last seen"); specials only within their SA-calendar validity (`todayInSA`).
 
 **API**
 
-- [ ] `GET /api/chains`, `GET /api/stores?region=`, `POST /api/stores` (users can add informal stores: spaza, butcher).
-- [ ] `GET /api/products/search?q=` (FTS5), `POST /api/products` (user-created, flagged for admin tidy-up).
-- [ ] `POST /api/prices` (manual entry), `GET /api/products/:id/prices?region=`.
-- [ ] `PUT /api/me/loyalty-cards`, `PUT /api/me/stores`.
+- [x] `GET /api/catalogue` (chains + taxonomy, cached), `GET/POST /api/stores` (region from prefs, de-duplicated).
+- [x] `GET /api/products/search?q=&type=` (FTS5 prefix, bm25), `POST /api/products` (sizes normalised), `GET /api/products/:id` (resolved price per user store + priced stores in region).
+- [x] `POST /api/prices` (manual, store-scoped, validated promos).
+- [x] `GET/PUT /api/me/loyalty-cards`, `GET/PUT /api/me/stores`.
+- [x] Account deletion keeps shared prices/stores but nulls `created_by`.
+- [ ] Admin tidy-up of user-created products — moved to M4 alongside the moderation queue.
 
 **Web**
 
-- [ ] Settings: loyalty cards, my stores.
-- [ ] List item editor: type freely; autocomplete suggests product types (vague) and products (specific).
-- [ ] Price entry form: store → product search/create → price, member price, promo → submit. Built for one-handed in-store use.
-- [ ] Product page: current price per store + unit price.
-- [ ] Checklist grouped by category order.
+- [x] Settings: my stores (pick an existing branch or add one, incl. informal shops), loyalty cards (optimistic toggle).
+- [x] List items: suggestions while typing — product types (offline, from the cached catalogue) and exact products (search); exact type names auto-link; existing items can be linked when edited.
+- [x] Checklist grouped by aisle (category order), unlinked items under "Other"; exact products link to their prices.
+- [x] Prices: search + browse by category; product page with per-store price, unit price, member price (✓ if you hold the card), specials, "last seen" for stale prices, cheapest first.
+- [x] Log a price: product search/create → store → price, member price, special (reduced / multibuy / buy X get Y, card-only, end date).
+- [x] Privacy policy updated (loyalty programmes, shared contributions).
 
-**Tests:** unit price/promo/resolution maths; price scope resolution against D1.
-**Done when:** a user can log prices at three stores and see per-store prices and unit prices on a product page.
+**Tests:** units/promo/resolution maths (incl. SA midnight); catalogue, stores, search (incl. sizes, diacritics), product creation, price entry + resolution, validation, POPIA deletion against D1; list-link merge parity (JS/SQL); Playwright e2e for logging a price and linking a list item.
+**Done when:** a user can log prices at three stores and see per-store prices and unit prices on a product page. ✅ Verified locally (deploy deferred).
 
 ### M4 — Pamphlet pipeline
 

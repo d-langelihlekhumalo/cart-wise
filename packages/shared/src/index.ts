@@ -5,3 +5,7 @@ export * from './schemas/errors';
 export * from './schemas/prefs';
 export * from './schemas/lists';
 export * from './sync/merge';
+export * from './schemas/catalogue';
+export * from './pricing/cost';
+export * from './pricing/resolve';
+export * from './pricing/units';

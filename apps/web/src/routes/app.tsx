@@ -3,6 +3,7 @@ import { type SubmitEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { PageHeader } from '../components/Layout';
 import { PrefsForm } from '../components/PrefsForm';
+import { LoyaltyCardsCard, MyStoresCard } from '../components/ShoppingSetup';
 import { Alert, Button, Card, Spinner, TextField } from '../components/ui';
 import { apiRequest } from '../lib/api';
 import { usePrefs } from '../lib/prefs';
@@ -45,16 +46,20 @@ export function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Settings" description="Your region, budget and account." />
+      <PageHeader title="Settings" description="Your region, stores, loyalty cards and account." />
 
       <div className="grid items-start gap-4 lg:grid-cols-3 lg:gap-6">
-        <Card className="space-y-4 lg:col-span-2 lg:p-6">
-          <div>
-            <h2 className="font-semibold">Shopping preferences</h2>
-            <p className="text-sm text-stone-600">Used to pick prices and plan your shop.</p>
-          </div>
-          <PrefsForm initial={prefs ?? null} mode="settings" submitLabel="Save changes" />
-        </Card>
+        <div className="space-y-4 lg:col-span-2 lg:space-y-6">
+          <Card className="space-y-4 lg:p-6">
+            <div>
+              <h2 className="font-semibold">Shopping preferences</h2>
+              <p className="text-sm text-stone-600">Used to pick prices and plan your shop.</p>
+            </div>
+            <PrefsForm initial={prefs ?? null} mode="settings" submitLabel="Save changes" />
+          </Card>
+          <MyStoresCard />
+          <LoyaltyCardsCard />
+        </div>
 
         <div className="space-y-4 lg:space-y-6">
           <Card className="space-y-3">

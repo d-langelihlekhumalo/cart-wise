@@ -11,6 +11,8 @@ function item(overrides: Partial<ListItem> = {}): ListItem {
     listId: LIST_ID,
     text: 'Bread',
     quantity: 1,
+    productTypeId: null,
+    productId: null,
     contentUpdatedAt: 100,
     checked: false,
     checkedUpdatedAt: 100,
@@ -87,6 +89,29 @@ describe('mergeItem', () => {
   });
 });
 
+describe('mergeItem catalogue links', () => {
+  it('moves links together with the rest of the content', () => {
+    const linked = item({ productTypeId: 'white-bread', contentUpdatedAt: 300 });
+    const renamed = item({ text: 'White bread', contentUpdatedAt: 200 });
+    expect(mergeItem(renamed, linked)).toMatchObject({
+      text: 'Bread',
+      productTypeId: 'white-bread',
+    });
+  });
+
+  it('treats rows saved before links existed as unlinked', () => {
+    const { productTypeId: _t, productId: _p, ...legacy } = item();
+    expect(mergeItem(legacy, legacy)).toEqual(item());
+  });
+
+  it('breaks ties on links deterministically', () => {
+    const a = item({ productTypeId: 'white-bread' });
+    const b = item({ productTypeId: 'white-bread', productId: 'seed-albany' });
+    expect(mergeItem(a, b)).toEqual(mergeItem(b, a));
+    expect(mergeItem(a, b).productId).toBe('seed-albany');
+  });
+});
+
 describe('mergeList', () => {
   it('takes the newer name, ties to the larger string', () => {
     expect(
@@ -126,6 +151,8 @@ function randomItem(next: () => number): ListItem {
     checkedUpdatedAt: pick([100, 200, 300]),
     createdAt: pick([50, 100]),
     deletedAt: pick([null, null, 150, 250]),
+    productTypeId: pick([null, 'white-bread', 'brown-bread']),
+    productId: pick([null, null, 'seed-albany']),
   });
 }
 

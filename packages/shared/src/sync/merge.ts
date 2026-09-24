@@ -9,7 +9,8 @@ import type { List, ListItem } from '../schemas/lists';
 //
 // Tie-breaks when timestamps are equal must be deterministic:
 // - list name: the larger string wins
-// - item content: the larger text wins, then the larger quantity
+// - item content: the larger text wins, then quantity, then product type id, then product id
+//   (missing links compare as '')
 // - checked: `true` wins
 // - tombstones: the earliest deletion time wins (any deletion is final)
 
@@ -32,11 +33,20 @@ export function mergeList(a: List, b: List): List {
   };
 }
 
+/** Tie-break order for equal content timestamps; mirrored by CONTENT_FROM_EXCLUDED in SQL. */
+function contentGreater(b: ListItem, a: ListItem): boolean {
+  if (b.text !== a.text) return b.text > a.text;
+  if (b.quantity !== a.quantity) return b.quantity > a.quantity;
+  const bType = b.productTypeId ?? '';
+  const aType = a.productTypeId ?? '';
+  if (bType !== aType) return bType > aType;
+  return (b.productId ?? '') > (a.productId ?? '');
+}
+
 export function mergeItem(a: ListItem, b: ListItem): ListItem {
   const contentFromB =
     b.contentUpdatedAt > a.contentUpdatedAt ||
-    (b.contentUpdatedAt === a.contentUpdatedAt &&
-      (b.text > a.text || (b.text === a.text && b.quantity > a.quantity)));
+    (b.contentUpdatedAt === a.contentUpdatedAt && contentGreater(b, a));
   const content = contentFromB ? b : a;
 
   const checkedFromB =
@@ -49,6 +59,8 @@ export function mergeItem(a: ListItem, b: ListItem): ListItem {
     listId: a.listId,
     text: content.text,
     quantity: content.quantity,
+    productTypeId: content.productTypeId ?? null,
+    productId: content.productId ?? null,
     contentUpdatedAt: content.contentUpdatedAt,
     checked: checked.checked,
     checkedUpdatedAt: checked.checkedUpdatedAt,

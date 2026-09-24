@@ -17,10 +17,21 @@ export function PrivacyPage() {
           the most precise location we store.
         </li>
         <li>
+          Which loyalty programmes you use (for example Xtra Savings), so we only show member prices
+          you can get. We never ask for card numbers.
+        </li>
+        <li>The stores you shop at, and your shopping lists.</li>
+        <li>
           For each signed-in session, the IP address and browser type, to keep your account secure.
           Sessions are deleted when you sign out or they expire.
         </li>
       </ul>
+
+      <h2>Prices and stores you add</h2>
+      <p>
+        Prices, products and stores you add are shared with everyone, so they help other shoppers.
+        If you delete your account they stay in the app, but nothing links them to you anymore.
+      </p>
 
       <h2>What we don&apos;t do</h2>
       <ul>
@@ -36,7 +47,7 @@ export function PrivacyPage() {
           settings
         </Link>
         . You can delete your account there at any time; this permanently removes your personal
-        information and preferences.
+        information, preferences, stores and lists.
       </p>
 
       <h2>Contact</h2>

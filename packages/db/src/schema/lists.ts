@@ -29,6 +29,9 @@ export const listItems = sqliteTable(
       .references(() => lists.id, { onDelete: 'cascade' }),
     text: text('text').notNull(),
     quantity: integer('quantity').notNull(),
+    /** Optional links to the catalogue (M3). No FK: rows come from offline clients. */
+    productTypeId: text('product_type_id'),
+    productId: text('product_id'),
     contentUpdatedAt: integer('content_updated_at').notNull(),
     checked: integer('checked', { mode: 'boolean' }).notNull(),
     checkedUpdatedAt: integer('checked_updated_at').notNull(),

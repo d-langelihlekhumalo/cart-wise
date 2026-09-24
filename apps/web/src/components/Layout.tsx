@@ -119,7 +119,7 @@ interface NavEntry {
 const navEntries: NavEntry[] = [
   { to: '/', label: 'Home', icon: HomeIcon },
   { to: '/lists', label: 'Lists', icon: ListIcon },
-  { to: '/prices', label: 'Prices', icon: TagIcon, soon: true },
+  { to: '/prices', label: 'Prices', icon: TagIcon },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 

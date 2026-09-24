@@ -63,6 +63,12 @@ const router = createBrowserRouter([
                   { index: true, lazy: () => import('./features/lists/HomePage') },
                   { path: 'lists', lazy: () => import('./features/lists/ListsPage') },
                   { path: 'lists/:listId', lazy: () => import('./features/lists/ListDetailPage') },
+                  { path: 'prices', lazy: () => import('./features/prices/PricesPage') },
+                  { path: 'prices/new', lazy: () => import('./features/prices/LogPricePage') },
+                  {
+                    path: 'products/:productId',
+                    lazy: () => import('./features/prices/ProductPage'),
+                  },
                   { path: 'settings', Component: SettingsPage },
                 ],
               },
